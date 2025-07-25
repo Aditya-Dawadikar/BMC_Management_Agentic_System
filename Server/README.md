@@ -33,11 +33,11 @@ GEMINI_MODEL_NAME=gemini-2.0-flash
 
 ## Running the server
 
-uvicorn main:app --reload
+uvicorn main:app --reload --host 0.0.0.0 --port 8002
 
 ## Testing on endpoint
 
-Local endpoint: http://localhost:8000/chat
+Local endpoint: http://localhost:8002/chat
 
 Body:
 {
