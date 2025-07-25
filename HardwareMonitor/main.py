@@ -219,12 +219,12 @@ async def background_collector():
                     filename = f"{s3_prefix}{batch_start_time}_to_{batch_end_time}.json"
 
                     # TODO: enable this when data upload is needed
-                    s3.put_object(
-                        Bucket=s3_bucket_name,
-                        Key=filename,
-                        Body=json.dumps(s3_buffer).encode("utf-8"),
-                        ContentType="application/json"
-                    )
+                    # s3.put_object(
+                    #     Bucket=s3_bucket_name,
+                    #     Key=filename,
+                    #     Body=json.dumps(s3_buffer).encode("utf-8"),
+                    #     ContentType="application/json"
+                    # )
 
                     # Summarize in MongoDB
                     summary_doc = summarize_batch(
@@ -235,7 +235,7 @@ async def background_collector():
                     )
 
                     # print(summary_doc)
-                    mongo_collection.insert_one(summary_doc)
+                    # mongo_collection.insert_one(summary_doc)
 
                     print(f"Uploaded {filename} with {len(s3_buffer)} entries")
                     
