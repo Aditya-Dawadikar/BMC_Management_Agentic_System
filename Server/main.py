@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
 from dotenv import load_dotenv
+from redfish_agent import get_agent_response
+import traceback
 
 load_dotenv()
 
@@ -62,6 +64,16 @@ def extract_date_range(text: str) -> tuple[str | None, str | None]:
         return start_date, end_date
     except json.JSONDecodeError:
         return None, None
+
+@app.post("/test")
+async def test(request: ChatRequest):
+    try:
+        user_message = request.message
+        reply = await get_agent_response(user_message)
+        return {"response": reply}
+    except Exception as e:
+        traceback.print_exc()
+        return {"error": str(e)}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
