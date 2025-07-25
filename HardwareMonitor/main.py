@@ -2,12 +2,14 @@ import os
 from fastapi import FastAPI, Response
 from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
 import requests
-
+import asyncio
 import threading, time, json, boto3
 from datetime import datetime
 from botocore.exceptions import BotoCoreError, NoCredentialsError
 from dotenv import load_dotenv
 from pymongo import MongoClient
+
+from redfish_controller import get_snapshot
 
 load_dotenv()
 
@@ -17,8 +19,10 @@ s3_bucket_name = os.getenv("S3_BUCKET_NAME")
 s3_prefix = "telemetry/"
 s3 = boto3.client("s3")
 
-PROBE_INTERVAL = int(os.getenv("PROBE_INTERVAL",2)) # 2secs
-BATCH_SIZE = int(os.getenv("BATCH_SIZE",10)) # 10 records
+background_task = None
+
+PROBE_INTERVAL = int(os.getenv("PROBE_INTERVAL",5)) # 2secs
+BATCH_SIZE = int(os.getenv("BATCH_SIZE",5)) # 10 records
 
 # Setup MongoDB
 mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
@@ -37,44 +41,62 @@ DEVICE_NAME=os.getenv("DEVICE_NAME")
 MODULES_TO_MONITOR=os.getenv("MODULES_TO_MONITOR")
 
 # Define Gauges
-cpu_temp_gauge = Gauge("cpu_temperature_celsius", "CPU Temperature", ["core"])
-cpu_min_temp_gauge = Gauge("cpu_min_temperature_celsius", "CPU Temperature (Min)", ["core"])
-cpu_max_temp_gauge = Gauge("cpu_max_temperature_celsius", "CPU Temperature (Max)", ["core"])
 
-cpu_voltage_guage = Gauge("cpu_voltage_volt", "CPU Voltage", ["core"])
-cpu_powers_guage = Gauge("cpu_powers_watt", "CPU Power", ["core"])
-cpu_load_gauge = Gauge("cpu_load_percent", "CPU Load", ["core"])
+cpu_temp_gauge = Gauge("cpu_temperature_celsius", "CPU Temperature", ["chassis", "sensor"])
+cpu_min_temp_gauge = Gauge("cpu_min_temperature_celsius", "CPU Temperature (Min)", ["chassis", "sensor"])
+cpu_max_temp_gauge = Gauge("cpu_max_temperature_celsius", "CPU Temperature (Max)", ["chassis", "sensor"])
+
+cpu_voltage_gauge = Gauge("cpu_voltage_volt", "CPU Voltage", ["chassis", "rail"])
+cpu_powers_gauge = Gauge("cpu_powers_watt", "CPU Power", ["chassis", "supply"])
+cpu_load_gauge = Gauge("cpu_load_percent", "CPU Load", ["chassis", "core"])
 
 
 def classify_snapshot(snapshot):
     reasons = []
     status = "healthy"
 
-    #Temperature checks
-    for sensor, data in snapshot.get("temperature", {}).items():
-        temp = data.get("value", 0)
-        if temp > 90:
-            reasons.append(f"Temperature too high on '{sensor}' ({temp}°C > 90°C)")
-        elif temp > 80:
-            reasons.append(f"Temperature elevated on '{sensor}' ({temp}°C > 80°C)")
+    for chassis in snapshot.get("Chassis", []):
+        chassis_id = chassis.get("Id", "Unknown")
 
-    #Load checks
-    for sensor, load in snapshot.get("load", {}).items():
-        if load > 80:
-            reasons.append(f"CPU load is high on '{sensor}' ({load}% > 80%)")
+        # --- Temperature checks ---
+        thermal = chassis.get("Thermal", {})
+        for temp in thermal.get("Temperatures", []):
+            name = temp.get("Name", "Unknown")
+            value = temp.get("ReadingCelsius", 0)
+            sensor_name = f"{chassis_id}:{name}"
 
-    #Voltage checks
-    for sensor, volt in snapshot.get("voltage", {}).items():
-        if volt > 1.6:
-            reasons.append(f"Voltage too high on '{sensor}' ({volt}V > 1.6V)")
+            if value > 90:
+                reasons.append(f"Temperature too high on '{sensor_name}' ({value}°C > 90°C)")
+            elif value > 80:
+                reasons.append(f"Temperature elevated on '{sensor_name}' ({value}°C > 80°C)")
 
-    #Power checks
-    for sensor, pwr in snapshot.get("power", {}).items():
-        if pwr > 80:
-            reasons.append(f"Power draw is critical on '{sensor}' ({pwr}W > 80W)")
-        elif pwr > 50:
-            reasons.append(f"Power draw is elevated on '{sensor}' ({pwr}W > 50W)")
+        # --- Voltage checks ---
+        for voltage in chassis.get("Voltages", []):
+            name = voltage.get("Name", "Unknown")
+            value = voltage.get("ReadingVolts", 0)
+            sensor_name = f"{chassis_id}:{name}"
 
+            if value > 1.6:
+                reasons.append(f"Voltage too high on '{sensor_name}' ({value}V > 1.6V)")
+
+        # --- Power checks ---
+        power = chassis.get("Power", {})
+        total_power = power.get("PowerConsumedWatts", 0)
+        if total_power > 80:
+            reasons.append(f"Power draw is critical on '{chassis_id}:Total' ({total_power}W > 80W)")
+        elif total_power > 50:
+            reasons.append(f"Power draw is elevated on '{chassis_id}:Total' ({total_power}W > 50W)")
+
+        for psu in power.get("PowerSupplies", []):
+            name = psu.get("Name", "Unknown")
+            capacity = psu.get("CapacityWatts", 0)
+            sensor_name = f"{chassis_id}:{name}"
+            if capacity > 80:
+                reasons.append(f"Power draw is critical on '{sensor_name}' ({capacity}W > 80W)")
+            elif capacity > 50:
+                reasons.append(f"Power draw is elevated on '{sensor_name}' ({capacity}W > 50W)")
+
+    # Determine status
     if any("too high" in r or "critical" in r for r in reasons):
         status = "threat"
     elif reasons:
@@ -83,85 +105,58 @@ def classify_snapshot(snapshot):
     return status, reasons
 
 
-def update_metrics():
+async def update_metrics():
     """
-        Hardcoded way to fetch device metrics from sensors
-        Currently Monitors CPU temperature, voltage, power and load
+    Update Prometheus gauges based on the snapshot JSON data.
+    snapshot_json can be a Python dict or a JSON string.
     """
     try:
-        data = requests.get(LIBRE_HARDWARE_MONITORING_ENDPOINT).json()
+        data = get_snapshot()
         
-        temp_data = {}
-        load_data = {}
-        volt_data = {}
-        power_data = {}
+        print(f"[{datetime.utcnow().isoformat()}] Snapshot collected")
 
-        for hw in data["Children"]:
-            if DEVICE_NAME in hw["Text"]:
-                for sensor in hw["Children"]:
-                    if len(sensor["Children"]) > 0 and sensor["Text"] in MODULES_TO_MONITOR:
-                        for child in sensor["Children"]:
-                            if child["Text"]=="Voltages":
-                                for elem in child["Children"]:
-                                    name = elem["Text"]
-                                    value = float(elem["Value"].split(" ")[0])
-                                    cpu_voltage_guage.labels(core=name).set(value)
-                                    volt_data[name]=value
-                            if child["Text"]=="Powers":
-                                for elem in child["Children"]:
-                                    name = elem["Text"]
-                                    value = float(elem["Value"].split(" ")[0])
-                                    cpu_powers_guage.labels(core=name).set(value)
-                                    power_data[name]=value
-                            if child["Text"]=="Temperatures":
-                                for elem in child["Children"]:
-                                    name = elem["Text"]
-                                    value = float(elem["Value"].split(" ")[0])
-                                    min = float(elem["Min"].split(" ")[0])
-                                    max = float(elem["Max"].split(" ")[0])
+        for chassis in data.get("Chassis", []):
+            chassis_id = chassis.get("Id")
 
-                                    cpu_temp_gauge.labels(core=name).set(value)
-                                    cpu_min_temp_gauge.labels(core=name).set(min)
-                                    cpu_max_temp_gauge.labels(core=name).set(max)
+            # Update thermal metrics
+            thermal = chassis.get("Thermal", {})
+            for temp_sensor in thermal.get("Temperatures", []):
+                name = temp_sensor.get("Name", "Unknown")
+                current_temp = temp_sensor.get("ReadingCelsius", 0)
+                cpu_temp_gauge.labels(chassis=chassis_id, sensor=name).set(current_temp)
+                cpu_min_temp_gauge.labels(chassis=chassis_id, sensor=name).set(temp_sensor.get("LowerThresholdNonCritical", 0))
+                cpu_max_temp_gauge.labels(chassis=chassis_id, sensor=name).set(temp_sensor.get("UpperThresholdCritical", 0))
 
-                                    temp_data[name] = {
-                                        "value": value,
-                                        "min": min,
-                                        "max": max
-                                    }
+            # Update voltage metrics
+            for voltage in chassis.get("Voltages", []):
+                rail_name = voltage.get("Name", "Unknown")
+                cpu_voltage_gauge.labels(chassis=chassis_id, rail=rail_name).set(voltage.get("ReadingVolts", 0))
 
-                            if child["Text"]=="Load":
-                                for elem in child["Children"]:
-                                    name = elem["Text"]
-                                    value = float(elem["Value"].split(" ")[0])
-                                    cpu_load_gauge.labels(core=name).set(value)
-                                    load_data[name] = value
+            # Update power metrics
+            power = chassis.get("Power", {})
+            total_power = power.get("PowerConsumedWatts", 0)
+            cpu_powers_gauge.labels(chassis=chassis_id, supply="Total").set(total_power)
 
-        snapshot = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "temperature": temp_data,
-            "load": load_data,
-            "voltage": volt_data,
-            "power": power_data
-        }
-        health_status, reasons = classify_snapshot(snapshot)
-        snapshot["health_status"] = health_status
-        snapshot["reasons"] = reasons
-        return snapshot
+            for supply in power.get("PowerSupplies", []):
+                supply_name = supply.get("Name", "Unknown")
+                capacity = supply.get("CapacityWatts", 0)
+                cpu_powers_gauge.labels(chassis=chassis_id, supply=supply_name).set(capacity)
+
+        return data
 
     except Exception as e:
         print(f"Error fetching metrics: {e}")
 
 # Expose /metrics
 @app.get("/metrics")
-def metrics():
-    update_metrics()
+async def metrics():
+    await update_metrics()
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.on_event("startup")
-def start_background_thread():
-    thread = threading.Thread(target=background_collector, daemon=True)
-    thread.start()
+async def start_background_thread():
+    global background_task
+    background_task = asyncio.create_task(background_collector())
 
 def to_unix_timestamp(ts: str) -> str:
     return str(int(datetime.fromisoformat(ts).timestamp()))
@@ -198,45 +193,71 @@ def summarize_batch(buffer, s3_path, start_time, end_time):
 
     return summary
 
-def background_collector():
+async def background_collector():
     global s3_buffer
     batch_start_time = None
+    print("[BackgroundCollector] Started")
 
-    while True:
-        time.sleep(PROBE_INTERVAL)
+    try:
+        while True:
+            await asyncio.sleep(PROBE_INTERVAL)
 
-        snapshot = update_metrics()
-        if snapshot:
-            if batch_start_time is None:
-                batch_start_time = to_unix_timestamp(snapshot["timestamp"])
-            s3_buffer.append(snapshot)
-
-        if len(s3_buffer) >= BATCH_SIZE:  # 5 samples × 2s = 10s
             try:
-                batch_end_time = to_unix_timestamp(s3_buffer[-1]["timestamp"])
-                filename = f"{s3_prefix}{batch_start_time}_to_{batch_end_time}.json"
+                snapshot = await update_metrics()  # Remove await if update_metrics is not async
+            except TypeError as e:
+                print(f"Error fetching metrics: {e}")
+                snapshot = None
 
-                # TODO: enable this when data upload is needed
-                # s3.put_object(
-                #     Bucket=s3_bucket_name,
-                #     Key=filename,
-                #     Body=json.dumps(s3_buffer).encode("utf-8"),
-                #     ContentType="application/json"
-                # )
+            if snapshot:
+                if batch_start_time is None:
+                    batch_start_time = to_unix_timestamp(snapshot["timestamp"])
+                s3_buffer.append(snapshot)
 
-                # Summarize in MongoDB
-                summary_doc = summarize_batch(
-                    buffer=s3_buffer,
-                    s3_path=filename,
-                    start_time=batch_start_time,
-                    end_time=batch_end_time
-                )
-                mongo_collection.insert_one(summary_doc)
+            if len(s3_buffer) >= BATCH_SIZE:  # 5 samples × 2s = 10s
+                try:
+                    batch_end_time = to_unix_timestamp(s3_buffer[-1]["timestamp"])
+                    filename = f"{s3_prefix}{batch_start_time}_to_{batch_end_time}.json"
 
-                print(f"Uploaded {filename} with {len(s3_buffer)} entries")
+                    # TODO: enable this when data upload is needed
+                    s3.put_object(
+                        Bucket=s3_bucket_name,
+                        Key=filename,
+                        Body=json.dumps(s3_buffer).encode("utf-8"),
+                        ContentType="application/json"
+                    )
+
+                    # Summarize in MongoDB
+                    summary_doc = summarize_batch(
+                        buffer=s3_buffer,
+                        s3_path=filename,
+                        start_time=batch_start_time,
+                        end_time=batch_end_time
+                    )
+
+                    # print(summary_doc)
+                    mongo_collection.insert_one(summary_doc)
+
+                    print(f"Uploaded {filename} with {len(s3_buffer)} entries")
+                    
+                    s3_buffer = []
+                    batch_start_time = None
                 
-                s3_buffer = []
-                batch_start_time = None
-            
-            except (BotoCoreError, NoCredentialsError) as e:
-                print(f"S3 upload error: {e}")
+                except (BotoCoreError, NoCredentialsError) as e:
+                    print(f"S3 upload error: {e}")
+    except asyncio.CancelledError:
+        print("[BackgroundCollector] Cancelled. Cleaning up...")
+        raise
+    except Exception as e:
+        print(f"[BackgroundCollector] Error: {e}")
+        raise
+
+@app.on_event("shutdown")
+async def stop_background_task():
+    global background_task
+    if background_task:
+        print("[Shutdown] Cancelling background collector...")
+        background_task.cancel()
+        try:
+            await background_task
+        except asyncio.CancelledError:
+            print("[Shutdown] Background collector stopped.")
