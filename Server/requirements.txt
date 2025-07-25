@@ -4,4 +4,3 @@ pydantic
 pymongo
 python-dotenv
 google-generativeai
-dateparser
