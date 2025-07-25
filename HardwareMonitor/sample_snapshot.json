@@ -1,0 +1,479 @@
+{
+  "timestamp": "2025-07-24T22:10:12.123456+00:00",
+  "Chassis": [
+    {
+      "Id": "Chassis-2",
+      "Thermal": {
+        "Policy": "Balanced",
+        "Fans": [
+          {
+            "MemberId": "0",
+            "Name": "Fan1",
+            "Reading": 55,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "1",
+            "Name": "Fan2",
+            "Reading": 43,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "2",
+            "Name": "Fan3",
+            "Reading": 35,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ],
+        "Temperatures": [
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-2/Thermal#/Temperatures/0",
+            "MemberId": "0",
+            "Name": "CPU Temp",
+            "SensorNumber": 1,
+            "ReadingCelsius": 44,
+            "UpperThresholdNonCritical": 70,
+            "UpperThresholdCritical": 85,
+            "UpperThresholdFatal": 95,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-2/Thermal#/Temperatures/1",
+            "MemberId": "1",
+            "Name": "GPU Temp",
+            "SensorNumber": 2,
+            "ReadingCelsius": 70,
+            "UpperThresholdNonCritical": 80,
+            "UpperThresholdCritical": 95,
+            "UpperThresholdFatal": 105,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-2/Thermal#/Temperatures/2",
+            "MemberId": "2",
+            "Name": "Memory Temp",
+            "SensorNumber": 3,
+            "ReadingCelsius": 48,
+            "UpperThresholdNonCritical": 65,
+            "UpperThresholdCritical": 75,
+            "UpperThresholdFatal": 85,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-2/Thermal#/Temperatures/3",
+            "MemberId": "3",
+            "Name": "VRM Temp",
+            "SensorNumber": 4,
+            "ReadingCelsius": 66,
+            "UpperThresholdNonCritical": 75,
+            "UpperThresholdCritical": 90,
+            "UpperThresholdFatal": 100,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-2/Thermal#/Temperatures/4",
+            "MemberId": "4",
+            "Name": "Ambient Temp",
+            "SensorNumber": 5,
+            "ReadingCelsius": 23,
+            "UpperThresholdNonCritical": 40,
+            "UpperThresholdCritical": 50,
+            "UpperThresholdFatal": 60,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ]
+      },
+      "Power": {
+        "PowerConsumedWatts": 265,
+        "PowerLimit": 400,
+        "PowerSupplies": [
+          {
+            "Name": "PSU1",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          },
+          {
+            "Name": "PSU2",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          }
+        ]
+      },
+      "Voltages": [
+        {
+          "Name": "12V Rail",
+          "ReadingVolts": 12.11,
+          "UpperThresholdCritical": 12.5,
+          "LowerThresholdCritical": 11.5
+        },
+        {
+          "Name": "5V Rail",
+          "ReadingVolts": 4.91,
+          "UpperThresholdCritical": 5.25,
+          "LowerThresholdCritical": 4.75
+        },
+        {
+          "Name": "3.3V Rail",
+          "ReadingVolts": 3.28,
+          "UpperThresholdCritical": 3.5,
+          "LowerThresholdCritical": 3.0
+        }
+      ]
+    },
+    {
+      "Id": "Chassis-1",
+      "Thermal": {
+        "Policy": "Balanced",
+        "Fans": [
+          {
+            "MemberId": "0",
+            "Name": "Fan1",
+            "Reading": 40,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "1",
+            "Name": "Fan2",
+            "Reading": 40,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "2",
+            "Name": "Fan3",
+            "Reading": 60,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ],
+        "Temperatures": [
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-1/Thermal#/Temperatures/0",
+            "MemberId": "0",
+            "Name": "CPU Temp",
+            "SensorNumber": 1,
+            "ReadingCelsius": 50,
+            "UpperThresholdNonCritical": 70,
+            "UpperThresholdCritical": 85,
+            "UpperThresholdFatal": 95,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-1/Thermal#/Temperatures/1",
+            "MemberId": "1",
+            "Name": "GPU Temp",
+            "SensorNumber": 2,
+            "ReadingCelsius": 44,
+            "UpperThresholdNonCritical": 80,
+            "UpperThresholdCritical": 95,
+            "UpperThresholdFatal": 105,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-1/Thermal#/Temperatures/2",
+            "MemberId": "2",
+            "Name": "Memory Temp",
+            "SensorNumber": 3,
+            "ReadingCelsius": 31,
+            "UpperThresholdNonCritical": 65,
+            "UpperThresholdCritical": 75,
+            "UpperThresholdFatal": 85,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-1/Thermal#/Temperatures/3",
+            "MemberId": "3",
+            "Name": "VRM Temp",
+            "SensorNumber": 4,
+            "ReadingCelsius": 50,
+            "UpperThresholdNonCritical": 75,
+            "UpperThresholdCritical": 90,
+            "UpperThresholdFatal": 100,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-1/Thermal#/Temperatures/4",
+            "MemberId": "4",
+            "Name": "Ambient Temp",
+            "SensorNumber": 5,
+            "ReadingCelsius": 34,
+            "UpperThresholdNonCritical": 40,
+            "UpperThresholdCritical": 50,
+            "UpperThresholdFatal": 60,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ]
+      },
+      "Power": {
+        "PowerConsumedWatts": 271,
+        "PowerLimit": 400,
+        "PowerSupplies": [
+          {
+            "Name": "PSU1",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          },
+          {
+            "Name": "PSU2",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          }
+        ]
+      },
+      "Voltages": [
+        {
+          "Name": "12V Rail",
+          "ReadingVolts": 11.88,
+          "UpperThresholdCritical": 12.5,
+          "LowerThresholdCritical": 11.5
+        },
+        {
+          "Name": "5V Rail",
+          "ReadingVolts": 5.0,
+          "UpperThresholdCritical": 5.25,
+          "LowerThresholdCritical": 4.75
+        },
+        {
+          "Name": "3.3V Rail",
+          "ReadingVolts": 3.27,
+          "UpperThresholdCritical": 3.5,
+          "LowerThresholdCritical": 3.0
+        }
+      ]
+    },
+    {
+      "Id": "Chassis-3",
+      "Thermal": {
+        "Policy": "Balanced",
+        "Fans": [
+          {
+            "MemberId": "0",
+            "Name": "Fan1",
+            "Reading": 59,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "1",
+            "Name": "Fan2",
+            "Reading": 42,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "MemberId": "2",
+            "Name": "Fan3",
+            "Reading": 44,
+            "Units": "Percent",
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ],
+        "Temperatures": [
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-3/Thermal#/Temperatures/0",
+            "MemberId": "0",
+            "Name": "CPU Temp",
+            "SensorNumber": 1,
+            "ReadingCelsius": 45,
+            "UpperThresholdNonCritical": 70,
+            "UpperThresholdCritical": 85,
+            "UpperThresholdFatal": 95,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-3/Thermal#/Temperatures/1",
+            "MemberId": "1",
+            "Name": "GPU Temp",
+            "SensorNumber": 2,
+            "ReadingCelsius": 67,
+            "UpperThresholdNonCritical": 80,
+            "UpperThresholdCritical": 95,
+            "UpperThresholdFatal": 105,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-3/Thermal#/Temperatures/2",
+            "MemberId": "2",
+            "Name": "Memory Temp",
+            "SensorNumber": 3,
+            "ReadingCelsius": 43,
+            "UpperThresholdNonCritical": 65,
+            "UpperThresholdCritical": 75,
+            "UpperThresholdFatal": 85,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-3/Thermal#/Temperatures/3",
+            "MemberId": "3",
+            "Name": "VRM Temp",
+            "SensorNumber": 4,
+            "ReadingCelsius": 47,
+            "UpperThresholdNonCritical": 75,
+            "UpperThresholdCritical": 90,
+            "UpperThresholdFatal": 100,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          },
+          {
+            "@odata.id": "/redfish/v1/Chassis/Chassis-3/Thermal#/Temperatures/4",
+            "MemberId": "4",
+            "Name": "Ambient Temp",
+            "SensorNumber": 5,
+            "ReadingCelsius": 35,
+            "UpperThresholdNonCritical": 40,
+            "UpperThresholdCritical": 50,
+            "UpperThresholdFatal": 60,
+            "LowerThresholdNonCritical": 10,
+            "LowerThresholdCritical": 5,
+            "Status": {
+              "State": "Enabled",
+              "Health": "OK"
+            }
+          }
+        ]
+      },
+      "Power": {
+        "PowerConsumedWatts": 125,
+        "PowerLimit": 400,
+        "PowerSupplies": [
+          {
+            "Name": "PSU1",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          },
+          {
+            "Name": "PSU2",
+            "Status": "OK",
+            "CapacityWatts": 500,
+            "InputVoltage": 230
+          }
+        ]
+      },
+      "Voltages": [
+        {
+          "Name": "12V Rail",
+          "ReadingVolts": 11.81,
+          "UpperThresholdCritical": 12.5,
+          "LowerThresholdCritical": 11.5
+        },
+        {
+          "Name": "5V Rail",
+          "ReadingVolts": 4.95,
+          "UpperThresholdCritical": 5.25,
+          "LowerThresholdCritical": 4.75
+        },
+        {
+          "Name": "3.3V Rail",
+          "ReadingVolts": 3.29,
+          "UpperThresholdCritical": 3.5,
+          "LowerThresholdCritical": 3.0
+        }
+      ]
+    }
+  ]
+}

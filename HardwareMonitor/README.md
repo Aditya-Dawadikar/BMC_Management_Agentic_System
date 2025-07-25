@@ -1,8 +1,6 @@
 # Server to expose Hardware Metrics
 
-This server is dependent on LibreHardwareMonitoring software.
-
-Download it, and run it as a server. Most likely it will run on `http://172.23.192.1:8085`. If its running on a different port, please replace the value of `LIBRE_HARDWARE_MONITORING_ENDPOINT` in the main.py
+This server is dependent on `RedFishMockup` Server.
 
 ### Installation
 
@@ -33,16 +31,14 @@ Create a `.env` file with the following environment variables. AWS related crede
 |AWS_SECRET_ACCESS_KEY| AWS secret access key | Request for Keys |
 |AWS_DEFAULT_REGION| AWS region | us-east-2 |
 |PROBE_INTERVAL| Probe hardware very `n` seconds | 2 |
-|DEVICE_NAME| Your device name |  |
-|MODULES_TO_MONITOR| Your CPU name |  |
-|LIBRE_HARDWARE_MONITORING_ENDPOINT| localhost | http://localhost:8085/data.json |
 |MONGO_DB_NAME| your db name | bmc_telemetry_db |
 |MONGO_COLLECTION_NAME| collection name | s3_telemetry_batches |
 |MONGO_URI| Mongo db uri | mongodb://localhost:27017/ |
+|REDFISH_BASE_URL| RedFish Mock Server URL|http://localhost:8001/redfish/v1|
 
 ### Important Note
 
-The logic for archiving data to S3 is diasbled by default, please uncomment this code in `main.py`
+The logic for archiving data to S3 and Mongodb is diasbled by default, please uncomment this code in `main.py`
 
 ```
     # TODO: enable this when data upload is needed
@@ -52,5 +48,6 @@ The logic for archiving data to S3 is diasbled by default, please uncomment this
     #     Body=json.dumps(s3_buffer).encode("utf-8"),
     #     ContentType="application/json"
     # )
+    # mongo_collection.insert_one(summary_doc)
 
 ```
