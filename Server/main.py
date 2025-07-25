@@ -14,11 +14,13 @@ GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "bmc_telemetry_db")
 MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "s3_telemetry_batches")
+MONGO_CHATLOGS_COLLECTION_NAME = os.getenv("MONGO_CHATLOGS_COLLECTION_NAME", "chat_logs")
 
 # Mongo Setup
 mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
+mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
 
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
@@ -111,6 +113,17 @@ def chat(request: ChatRequest):
         chat = gemini_model.start_chat()
         response = chat.send_message(prompt)
         reply = response.text
+
+        # Save conversation log
+        mongo_logs.insert_one({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_message": user_message,
+            "ai_response": reply,
+            "date_range": {
+                "start": start_iso,
+                "end": end_iso
+            }
+        })
     except Exception as e:
         reply = f"Gemini error: {e}"
 
