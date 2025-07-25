@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-python-multipart
-aiofiles
-dotenv
-boto3
+pydantic
+pymongo
+python-dotenv
+google-generativeai
+dateparser
