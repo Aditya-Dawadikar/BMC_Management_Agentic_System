@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
 from fastapi.responses import JSONResponse
-from mongo_crud.mongo_crud import insert_chat_log, get_summaries, get_recent_chat_messages
+from mongo_crud.mongo_crud import get_action_logs, insert_chat_log, get_summaries, get_recent_chat_messages
 
 
 load_dotenv()
@@ -160,3 +160,16 @@ def chat(request: ChatRequest):
 @app.get("/api/chat_messages/recent")
 def get_chat_messages():
     return get_recent_chat_messages()
+
+@app.get("/api/action_logs")
+def fetch_action_logs(request: Request, limit: int = 10):
+    """
+    API endpoint to fetch action logs.
+    :param request: The HTTP request object to extract the query parameter.
+    :param limit: Maximum number of records to return.
+    :return: JSONResponse containing the action logs.
+    """
+    query_param = request.query_params.get("query")
+    query = json.loads(query_param) if query_param else None
+    print("Parsed Query:", query)  # Debugging log
+    return get_action_logs(query=query, limit=limit)

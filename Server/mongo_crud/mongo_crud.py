@@ -57,6 +57,11 @@ def get_summaries(start_unix: int, end_unix: int):
     }))
 
 def get_recent_chat_messages():
+    """
+    Fetch the most recent chat messages from the MongoDB chat_logs collection.
+    The messages are sorted in descending order of timestamp, and the result is limited to 10 records.
+    :return: A JSONResponse containing the recent chat messages or an error message.
+    """
     try:
         logs = list(mongo_chat_logs.find().sort("timestamp", -1).limit(10))
         print("Returning logs:", logs)  # Add this line
@@ -65,4 +70,24 @@ def get_recent_chat_messages():
         return JSONResponse(content={"messages": logs})
     except Exception as e:
         print("Error fetching chat logs:", e)  # Add this line
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+def get_action_logs(query: dict = None, limit: int = 10):
+    """
+    Fetch records from the action_logs collection based on the given query.
+    :param query: A dictionary representing the MongoDB query filter.
+    :param limit: The maximum number of records to return (default: 10).
+    :return: A JSONResponse containing the action logs or an error message.
+    """
+    try:
+        if query is None:
+            query = {}  # Default to an empty query to fetch all records
+
+        logs = list(mongo_action_logs.find(query).sort("timestamp", -1).limit(limit))
+        print("Returning action logs:", logs)  # Debugging log
+        for log in logs:
+            log["_id"] = str(log["_id"])  # Convert ObjectId to string for JSON serialization
+        return JSONResponse(content={"action_logs": logs})
+    except Exception as e:
+        print("Error fetching action logs:", e)  # Debugging log
         return JSONResponse(content={"error": str(e)}, status_code=500)
