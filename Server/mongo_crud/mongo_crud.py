@@ -2,6 +2,8 @@ from pymongo import MongoClient
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
+import certifi
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -12,7 +14,7 @@ MONGO_CHAT_LOGS_COLLECTION_NAME = os.getenv("MONGO_CHAT_LOGS_COLLECTION_NAME", "
 MONGO_ACTION_LOGS_COLLECTION_NAME = os.getenv("MONGO_ACTION_LOGS_COLLECTION_NAME", "action_logs")
 MONGO_S3_TELEMETRY_COLLECTION_NAME = os.getenv("MONGO_S3_TELEMETRY_COLLECTION_NAME", "s3_telemetry")
 
-mongo_client = MongoClient(MONGO_URI)
+mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_chat_logs = mongo_db[MONGO_CHAT_LOGS_COLLECTION_NAME]
 mongo_action_logs = mongo_db[MONGO_ACTION_LOGS_COLLECTION_NAME]
@@ -53,3 +55,14 @@ def get_summaries(start_unix: int, end_unix: int):
         "end_time": {"$gte": str(start_unix)},
         "start_time": {"$lte": str(end_unix)}
     }))
+
+def get_recent_chat_messages():
+    try:
+        logs = list(mongo_chat_logs.find().sort("timestamp", -1).limit(10))
+        print("Returning logs:", logs)  # Add this line
+        for log in logs:
+            log["_id"] = str(log["_id"])
+        return JSONResponse(content={"messages": logs})
+    except Exception as e:
+        print("Error fetching chat logs:", e)  # Add this line
+        return JSONResponse(content={"error": str(e)}, status_code=500)
