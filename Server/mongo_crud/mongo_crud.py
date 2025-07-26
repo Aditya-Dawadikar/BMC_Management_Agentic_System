@@ -72,7 +72,7 @@ def get_recent_chat_messages():
         print("Error fetching chat logs:", e)  # Add this line
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-def get_action_logs(query: dict = None, limit: int = 10):
+def get_action_logs(query: dict = None, limit: int = 20):
     """
     Fetch records from the action_logs collection based on the given query.
     :param query: A dictionary representing the MongoDB query filter.
