@@ -6,125 +6,142 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
 from dotenv import load_dotenv
-
+import boto3
+from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
-
+# Configs
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "bmc_telemetry_db")
 MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "s3_telemetry_batches")
 MONGO_CHATLOGS_COLLECTION_NAME = os.getenv("MONGO_CHATLOGS_COLLECTION_NAME", "chat_logs")
-
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
 # Mongo Setup
 mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
 mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
-
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel(GEMINI_MODEL_NAME)
-
+# S3 setup
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=AWS_DEFAULT_REGION
+)
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class ChatRequest(BaseModel):
     message: str
-
 def iso_to_unix(iso_str):
-    return int(datetime.fromisoformat(iso_str).timestamp())
-
-def extract_date_range(text: str) -> tuple[str | None, str | None]:
-    
-    # TODO: Update prompt to find is S3 source is needed. Add one var in return statement as True or False for S3 source
-
+    dt = datetime.fromisoformat(iso_str)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return int(dt.timestamp())
+def extract_date_range(text: str):
     prompt = f"""
-        Extract the start and end dates from the following sentence:
-        "{text}"
-        today is {datetime.now(timezone.utc).date().isoformat()}
-        Return a valid JSON object using ISO 8601 date format (YYYY-MM-DDTHH:MM:SS).
-        If only one date is found, set start_date from 00:00:00 and end_date till 23:59:59.
+    You are a system assistant that extracts time ranges and identifies whether raw S3 telemetry logs are required.
 
-        Respond only with:
-        {{
-        "start_date": "YYYY-MM-DDTHH:MM:SS",
-        "end_date": "YYYY-MM-DDTHH:MM:SS"
-        }}
-        No explanations, markdown, or extra text.
-        """
-    model = genai.GenerativeModel(GEMINI_MODEL_NAME)
-    response = model.generate_content(prompt)
-    
+    Here is a user query:
+    "{text}"
+
+    Today's date is {datetime.now(timezone.utc).date().isoformat()}.
+
+    Respond in this JSON format ONLY:
+    {{
+    "start_date": "YYYY-MM-DDTHH:MM:SS",
+    "end_date": "YYYY-MM-DDTHH:MM:SS",
+    "s3_required": true/false
+    }}
+
+    Rules:
+    - If the user mentions **sensor-level data**, like fan speeds, temperatures, CPU/GPU stats, or detailed logs → `s3_required = true`
+    - If the user just asks for **health summaries**, threat counts, or high-level summaries → `s3_required = false`
+    - If only one date is found, set `start_date` to 00:00:00 and `end_date` to 23:59:59 of that day.
+
+    Respond with JSON only. No extra text, no markdown.
+    """
+    response = genai.GenerativeModel(GEMINI_MODEL_NAME).generate_content(prompt)
     content = response.text.strip().strip("```json").strip("```")
-
     try:
         data = json.loads(content)
-        start_date = data.get("start_date")
-        end_date = data.get("end_date") or start_date  # handle single-date case
-        return start_date, end_date
+        return data.get("start_date"), data.get("end_date") or data.get("start_date"), data.get("s3_required", False)
     except json.JSONDecodeError:
-        return None, None
-
+        return None, None, False
+def fetch_s3_data(s3_path: str) -> str:
+    try:
+        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_path)
+        return response['Body'].read().decode('utf-8')
+    except Exception as e:
+        print(f"❌ Error fetching from S3: {e}")
+        return "Error fetching telemetry file from S3."
 @app.post("/chat")
 def chat(request: ChatRequest):
     user_message = request.message
-
-    # Step 1: Extract time window & identify if S3 source is needed
-    # TODO: accept three return values.
-    start_iso, end_iso = extract_date_range(user_message)
-    print("Dates from LLM:",start_iso, end_iso)
+    # Step 1: Extract window and s3 flag
+    start_iso, end_iso, s3_needed = extract_date_range(user_message)
+    print("Dates from LLM:", start_iso, end_iso, ", S3 Needed:", s3_needed)
     if not start_iso:
         return {"response": "Sorry, I couldn't understand the date in your question."}
-
-    # Step 2: Query Mongo for overlapping summaries & S3 locations
-    # TODO: Get S3 path based on the variable
     start_unix = iso_to_unix(start_iso)
     end_unix = iso_to_unix(end_iso)
-    print("Dates for Mongo:",start_unix, end_unix)
+    print("Dates for Mongo:", start_unix, end_unix)
     summaries = mongo_collection.find({
         "end_time": {"$gte": str(start_unix)},
         "start_time": {"$lte": str(end_unix)}
     })
-
     summary_list = list(summaries)
-    print(summary_list)
-
-    # TODO: If S3 source is needed, query S3 for telemetry files in the date range
-
-    # Step 3: Prepare context
-    # TODO: Add S3 data if needed
     if not summary_list:
         context = "No telemetry data found in that time range."
+        s3_data = ""
     else:
         context = "\n".join([
             f"[{s['start_time']} - {s['end_time']}] Threats: {s['threat_count']}, Unhealthy: {s['unhealthy_count']}, Reasons: {json.dumps(s['reasons'])}"
             for s in summary_list
         ])
-
-    # Step 4: Build prompt & call Gemini
+        s3_data = ""
+        if s3_needed:
+            
+            for s in summary_list:
+                s3_path = s.get("s3_path")
+                if s3_path:
+                    file_data = fetch_s3_data(s3_path)
+                    s3_data += f"\n\nS3 Telemetry File ({s3_path}):\n{file_data[:1000]}"
+                    print(s3_data)
+        
     prompt = (
         f"You are a system telemetry assistant. A user asked:\n\n"
         f"{user_message}\n\n"
         f"Here is the telemetry summary for the relevant time range:\n{context}\n\n"
+        f"{s3_data}\n"
         "Please analyze and answer clearly."
     )
-    print(f"Prompt sent to Gemini:\n{prompt}\n")
     try:
         chat = gemini_model.start_chat()
         response = chat.send_message(prompt)
         reply = response.text
-
-        # Save conversation log
         mongo_logs.insert_one({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user_message": user_message,
             "ai_response": reply,
-            "date_range": {
-                "start": start_iso,
-                "end": end_iso
-            }
+            "date_range": {"start": start_iso, "end": end_iso},
+            "s3_used": s3_needed
         })
     except Exception as e:
         reply = f"Gemini error: {e}"
-
     return {"response": reply}
+
