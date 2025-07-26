@@ -27,7 +27,7 @@ AWS_DEFAULT_REGION=us-east-2
 MONGO_DB_NAME=bmc_telemetry_db
 MONGO_COLLECTION_NAME=s3_telemetry_batches
 MONGO_CHATLOGS_COLLECTION_NAME=chat_logs
-MONGO_URI=mongodb://localhost:27017/
+MONGO_URI=mongodb+srv://bmc_user:booming@bmc-cluster.b6cjgoh.mongodb.net/?retryWrites=true&w=majority&appName=bmc-cluster&ssl=true
 
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL_NAME=gemini-2.0-flash

@@ -10,6 +10,8 @@ import boto3
 from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
+from fastapi.responses import JSONResponse
+import certifi
 
 load_dotenv()
 # Configs
@@ -24,7 +26,7 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
 # Mongo Setup
-mongo_client = MongoClient(MONGO_URI)
+mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
 mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
@@ -159,4 +161,16 @@ def chat(request: ChatRequest):
     except Exception as e:
         reply = f"Gemini error: {e}"
     return {"response": reply}
+
+@app.get("/api/chat_messages/recent")
+def get_recent_chat_messages():
+    try:
+        logs = list(mongo_logs.find().sort("timestamp", -1).limit(10))
+        print("Returning logs:", logs)  # Add this line
+        for log in logs:
+            log["_id"] = str(log["_id"])
+        return JSONResponse(content={"messages": logs})
+    except Exception as e:
+        print("Error fetching chat logs:", e)  # Add this line
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
