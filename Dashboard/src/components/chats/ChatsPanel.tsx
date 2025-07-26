@@ -100,7 +100,6 @@ const ChatsPanel = () => {
           display: "flex",
           gap: 1,
           mt: 1,
-          backgroundColor: "var(--color-light)",
           p: 1,
         }}
       >
