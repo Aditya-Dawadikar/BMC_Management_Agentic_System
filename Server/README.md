@@ -32,15 +32,13 @@ AWS_DEFAULT_REGION=us-east-2
 
 MONGO_DB_NAME=bmc_telemetry_db
 MONGO_COLLECTION_NAME=s3_telemetry_batches
-MONGO_CHATLOGS_COLLECTION_NAME=chat_logs
+MONGO_CHAT_LOGS_COLLECTION_NAME=chat_logs
 MONGO_URI=<MONGO CONNECTION STRING>
 MONGO_S3_TELEMETRY_COLLECTION_NAME=s3_telemetry_batches
 MONGO_ACTION_LOGS_COLLECTION_NAME=action_logs
 
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL_NAME=gemini-2.0-flash
-
-REDFISH_BASE_URL=http://localhost:8001/redfish/v1
 ```
 
 ## Running the server
@@ -49,11 +47,48 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8002
 
 ## Testing on endpoint
 
-Local endpoint: http://localhost:8002/chat
+Local endpoint: http://localhost:8002/chat (POST)
 
 Body:
 {
   "message": "What were the telemetry issues on 24 July 2025?"
 }
+
+
+Local endpoint: http://localhost:8002/api/action_logs (GET)
+
+```
+query:
+{ "actor": "agent/user" }
+
+query:
+{ "endpoint": "http://localhost:8001/redfish/v1/Chassis/Chassis-1/Thermal/Fans" }
+
+query:
+{ "payload.Fan1": 50 }
+
+query:
+{ "actor": "agent", "endpoint": "http://localhost:8001/redfish/v1/Chassis/Chassis-1/Thermal/Fans" }
+```
+
+after some timestamp:
+```
+query:
+{ "timestamp": { "$gte": "2025-07-24T12:00:00" } }
+```
+
+before some time:
+```
+query:
+{ "timestamp": { "$lte": "2025-07-24T12:00:00" } }
+```
+
+between dates:
+```
+query:
+{ "timestamp": { "$gte": "2025-07-25T00:00:00", "$lte": "2025-07-27T23:59:59" } }
+```
+
+
 
 
