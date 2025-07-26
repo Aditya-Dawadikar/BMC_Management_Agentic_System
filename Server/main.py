@@ -11,8 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
 from fastapi.responses import JSONResponse
-import certifi
-from mongo_crud.mongo_crud import insert_chat_log, get_summaries
+from mongo_crud.mongo_crud import insert_chat_log, get_summaries, get_recent_chat_messages
 
 
 load_dotenv()
@@ -23,12 +22,6 @@ S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
-
-# Mongo Setup
-mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
-mongo_db = mongo_client[MONGO_DB_NAME]
-mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
-mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
 
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
@@ -163,15 +156,7 @@ def chat(request: ChatRequest):
         reply = f"Gemini error: {e}"
     return {"response": reply}
 
-@app.get("/api/chat_messages/recent")
-def get_recent_chat_messages():
-    try:
-        logs = list(mongo_logs.find().sort("timestamp", -1).limit(10))
-        print("Returning logs:", logs)  # Add this line
-        for log in logs:
-            log["_id"] = str(log["_id"])
-        return JSONResponse(content={"messages": logs})
-    except Exception as e:
-        print("Error fetching chat logs:", e)  # Add this line
-        return JSONResponse(content={"error": str(e)}, status_code=500)
 
+@app.get("/api/chat_messages/recent")
+def get_chat_messages():
+    return get_recent_chat_messages()
