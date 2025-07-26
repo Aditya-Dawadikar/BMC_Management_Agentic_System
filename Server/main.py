@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
@@ -10,6 +10,9 @@ import boto3
 from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
+from fastapi.responses import StreamingResponse
+import asyncio
+import json
 
 load_dotenv()
 # Configs
@@ -23,14 +26,17 @@ S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+
 # Mongo Setup
 mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
 mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
+
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+
 # S3 setup
 s3_client = boto3.client(
     "s3",
@@ -38,6 +44,7 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_DEFAULT_REGION
 )
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +53,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class ChatRequest(BaseModel):
     message: str
 def iso_to_unix(iso_str):
@@ -93,6 +101,12 @@ def fetch_s3_data(s3_path: str) -> str:
         print(f"❌ Error fetching from S3: {e}")
         return "Error fetching telemetry file from S3."
         return None, None
+
+
+log_buffer = []
+MAX_BUFFER = 1000
+FLUSH_INTERVAL_MS = 500
+shutdown_flag = False
 
 @app.post("/test")
 async def test(request: ChatRequest):
@@ -160,3 +174,39 @@ def chat(request: ChatRequest):
         reply = f"Gemini error: {e}"
     return {"response": reply}
 
+
+def push_log(log):
+    global log_buffer
+    log_buffer.append(log)
+    if len(log_buffer) > MAX_BUFFER:
+        log_buffer.pop(0)
+
+async def sse_stream(request: Request):
+    last_index = 0  # Each client tracks its own read pointer
+    while not shutdown_flag:
+        if last_index < len(log_buffer):
+            # Send all new logs since last flush
+            new_logs = log_buffer[last_index:]
+            last_index = len(log_buffer)
+            yield f"data: {json.dumps(new_logs)}\n\n"
+        else:
+            # Heartbeat
+            yield ":\n\n"
+
+        await asyncio.sleep(FLUSH_INTERVAL_MS / 1000)
+        if await request.is_disconnected():
+            break
+
+@app.get("/logs")
+async def logs_stream(request: Request):
+    return StreamingResponse(sse_stream(request), media_type="text/event-stream")
+
+@app.post("/log")
+async def add_log(log: dict):
+    push_log(log)
+    return {"status": "queued", "message": log}
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global shutdown_flag
+    shutdown_flag = True
