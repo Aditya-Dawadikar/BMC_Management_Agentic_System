@@ -1,7 +1,8 @@
 import os
 import json
 from datetime import datetime, timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
@@ -10,27 +11,25 @@ import boto3
 from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
+from fastapi.responses import StreamingResponse, JSONResponse
+import asyncio
+import json
+from mongo_crud.mongo_crud import get_action_logs, insert_chat_log, get_summaries, get_recent_chat_messages
+from log_manager import push_log, sse_stream, stop_stream
 
 load_dotenv()
 # Configs
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "bmc_telemetry_db")
-MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "s3_telemetry_batches")
-MONGO_CHATLOGS_COLLECTION_NAME = os.getenv("MONGO_CHATLOGS_COLLECTION_NAME", "chat_logs")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
-# Mongo Setup
-mongo_client = MongoClient(MONGO_URI)
-mongo_db = mongo_client[MONGO_DB_NAME]
-mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
-mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
+
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+
 # S3 setup
 s3_client = boto3.client(
     "s3",
@@ -38,6 +37,7 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_DEFAULT_REGION
 )
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -46,8 +46,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class ChatRequest(BaseModel):
     message: str
+
 def iso_to_unix(iso_str):
     dt = datetime.fromisoformat(iso_str)
     if dt.tzinfo is None:
@@ -55,6 +57,7 @@ def iso_to_unix(iso_str):
     else:
         dt = dt.astimezone(timezone.utc)
     return int(dt.timestamp())
+
 def extract_date_range(text: str):
     prompt = f"""
     You are a system assistant that extracts time ranges and identifies whether raw S3 telemetry logs are required.
@@ -85,14 +88,21 @@ def extract_date_range(text: str):
         return data.get("start_date"), data.get("end_date") or data.get("start_date"), data.get("s3_required", False)
     except json.JSONDecodeError:
         return None, None, False
+
 def fetch_s3_data(s3_path: str) -> str:
     try:
         response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_path)
         return response['Body'].read().decode('utf-8')
     except Exception as e:
-        print(f"❌ Error fetching from S3: {e}")
+        print(f"Error fetching from S3: {e}")
         return "Error fetching telemetry file from S3."
         return None, None
+
+
+log_buffer = []
+MAX_BUFFER = 1000
+FLUSH_INTERVAL_MS = 500
+shutdown_flag = False
 
 @app.post("/test")
 async def test(request: ChatRequest):
@@ -115,11 +125,10 @@ def chat(request: ChatRequest):
     start_unix = iso_to_unix(start_iso)
     end_unix = iso_to_unix(end_iso)
     print("Dates for Mongo:", start_unix, end_unix)
-    summaries = mongo_collection.find({
-        "end_time": {"$gte": str(start_unix)},
-        "start_time": {"$lte": str(end_unix)}
-    })
-    summary_list = list(summaries)
+    
+    # Fetch summaries from MongoDB
+    summary_list = get_summaries(start_unix, end_unix)
+
     if not summary_list:
         context = "No telemetry data found in that time range."
         s3_data = ""
@@ -130,7 +139,6 @@ def chat(request: ChatRequest):
         ])
         s3_data = ""
         if s3_needed:
-            
             for s in summary_list:
                 s3_path = s.get("s3_path")
                 if s3_path:
@@ -149,14 +157,44 @@ def chat(request: ChatRequest):
         chat = gemini_model.start_chat()
         response = chat.send_message(prompt)
         reply = response.text
-        mongo_logs.insert_one({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "user_message": user_message,
-            "ai_response": reply,
-            "date_range": {"start": start_iso, "end": end_iso},
-            "s3_used": s3_needed
-        })
+        insert_chat_log(
+            user_message=user_message,
+            ai_response=reply,
+            date_range={"start": start_iso, "end": end_iso},
+            s3_used=s3_needed
+        )
     except Exception as e:
         reply = f"Gemini error: {e}"
     return {"response": reply}
 
+
+
+@app.get("/logs")
+async def logs_stream(request: Request):
+    return StreamingResponse(sse_stream(request), media_type="text/event-stream")
+
+@app.post("/log")
+async def add_log(log: dict):
+    push_log(log)
+    return {"status": "queued", "message": log}
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    stop_stream()
+
+@app.get("/api/chat_messages/recent")
+def get_chat_messages():
+    return get_recent_chat_messages()
+
+@app.get("/api/action_logs")
+def fetch_action_logs(request: Request, limit: int = 10):
+    """
+    API endpoint to fetch action logs.
+    :param request: The HTTP request object to extract the query parameter.
+    :param limit: Maximum number of records to return.
+    :return: JSONResponse containing the action logs.
+    """
+    query_param = request.query_params.get("query")
+    query = json.loads(query_param) if query_param else None
+    print("Parsed Query:", query)  # Debugging log
+    return get_action_logs(query=query, limit=limit)

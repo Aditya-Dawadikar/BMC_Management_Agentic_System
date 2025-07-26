@@ -3,12 +3,43 @@ import requests
 import httpx
 import asyncio
 from dotenv import load_dotenv
-
+from pymongo import MongoClient
 from redfish_schema import RedfishAction
+from mongo_crud.mongo_crud import log_action
+from log_manager import push_log
+from datetime import datetime, timezone
 
 load_dotenv()
 
 BASE_URL=os.getenv("REDFISH_BASE_URL", "http://localhost:8001/redfish/v1")
+
+def publish_logs(actor: str, endpoint:str, payload:any, response:any, method: str="POST", status: int=200):
+    """
+        Helper Function to Log data to SSE and MongoDB
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    # Push Logs to SSE
+    push_log({
+            "actor": actor,
+            "endpoint": endpoint,
+            "payload":payload,
+            "response": response,
+            "timestamp": timestamp,
+            "method": method,
+            "status": status
+        })
+    
+    # Push logs to MongoDb
+    log_action(
+        actor=actor,
+        endpoint=endpoint,
+        payload=payload,
+        response=response,
+        timestamp=timestamp,
+        method=method,
+        status=status
+    )
 
 def set_fan_speeds(fan_speeds: dict, chassis_id: str):
     """
@@ -19,6 +50,16 @@ def set_fan_speeds(fan_speeds: dict, chassis_id: str):
     try:
         resp = requests.post(url, json=fan_speeds)
         resp.raise_for_status()
+        
+        # Log the action
+        publish_logs(
+            actor="agent",
+            endpoint=url,
+            payload=fan_speeds,
+            response=resp.json(),
+            method=resp.request.method,
+            status=resp.status_code
+        )
         return resp.json()
     except Exception as e:
         print(f"Error setting fan speeds: {e}")
@@ -40,6 +81,14 @@ def set_voltage_thresholds(rail_name: str, upper: float, lower: float, chassis_i
     try:
         resp = requests.post(url, json=payload)
         resp.raise_for_status()
+        
+        # Log the action
+        publish_logs(
+            actor="agent",
+            endpoint=url,
+            payload=payload,
+            response=resp.json()
+        )
         return resp.json()
     except Exception as e:
         print(f"Error setting voltage thresholds: {e}")
@@ -55,6 +104,14 @@ def set_power_limit(limit_watts: int, chassis_id: str):
     try:
         resp = requests.post(url, json=payload)
         resp.raise_for_status()
+        
+        # Log the action
+        publish_logs(
+            actor="agent",
+            endpoint=url,
+            payload=payload,
+            response=resp.json()
+        )
         return resp.json()
     except Exception as e:
         print(f"Error setting power limit: {e}")

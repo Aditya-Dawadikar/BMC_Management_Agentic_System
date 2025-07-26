@@ -1,31 +1,68 @@
 :root {
-  /* 🌑 Base Theme */
-  --color-bg: #121212;
-  --color-surface: #1E1E2F;
-  --color-card: #24243C;
-  --color-light: #fef0ff;
+  /* 🌞 Base Colors */
+  --color-bg: #f8fdf9;          /* Soft white with a hint of green */
+  --color-surface: #ffffff;     /* Pure white cards */
+  --color-card: #ffffff;
+  --color-light: #1b3d2f;       /* Dark greenish-gray for code/json blocks */
 
-  /* 🎨 Vibrant Functional Colors */
-  --color-primary-accent: #00CFFF;
-  --color-success: #32D74B;
-  --color-warning: #FFB200;
-  --color-critical: #FF4D5A;
-  --color-info: #1DE9B6;
-  --color-secondary-accent: #B388FF;
+  /* 🎨 Accents (MongoDB Green Palette) */
+  --color-primary-accent: #13aa52;   /* Mongo Green */
+  --color-success: #2ecc71;          /* Calm light green */
+  --color-warning: #f5a623;          /* Warm amber warning */
+  --color-critical: #e74c3c;         /* Soft but clear red */
+  --color-info: #16a085;             /* Teal green */
 
   /* 📊 Graph Colors */
-  --color-graph-1: #FF4081;
-  --color-graph-2: #00BFA6;
-  --color-graph-3: #FFE600;
+  --color-graph-1: #13aa52;
+  --color-graph-2: #2ecc71;
+  --color-graph-3: #a3e635;          /* Pastel lime green */
 
   /* 🔤 Text & UI */
-  --color-text-primary: #E0E0E0;
-  --color-text-secondary: #9E9E9E;
-  --color-divider: #2A2A3C;
-  --color-hover: #33334D;
+  --color-text-primary: #1f2e27;     /* Darker greenish text */
+  --color-text-secondary: #5f7064;   /* Muted green-gray for secondary text */
+  --color-divider: #d8e2dc;          /* Subtle border lines */
+  --color-hover: #eef8f1;            /* Light green hover highlight */
 }
 
-
-body{
-    background-color: var(--color-bg);
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
 }
+
+/* Logs Panel Title */
+.logs-title {
+  border-bottom: 2px solid var(--color-primary-accent);
+  padding-bottom: 4px;
+  color: var(--color-primary-accent);
+}
+
+/* Log Item Accent */
+.log-item {
+  border-left: 4px solid var(--color-primary-accent);
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+/* Accordion Expanded State */
+.MuiAccordion-root.Mui-expanded {
+  background-color: #f0faf5; /* very pale green */
+}
+
+/* Button Hover */
+.MuiButton-contained:hover {
+  background-color: #0f8a42 !important;
+}
+
+@keyframes newLogHighlight {
+  0% {
+    background-color: #d4f8d4;
+  }
+  100% {
+    background-color: var(--color-surface);
+  }
+}
+
+.log-item.new-log {
+  animation: newLogHighlight 1.5s ease-out;
+}
+

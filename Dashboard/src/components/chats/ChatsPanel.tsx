@@ -6,6 +6,18 @@ import { LinearProgress } from "@mui/material";
 import { TextField } from "@mui/material";
 import { IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Paper,
+  Divider,
+  Typography,
+  LinearProgress,
+  TextField,
+  IconButton,
+} from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
+import axios from "axios";
 
 const ChatsPanel = () => {
   const [messages, setMessage] = useState<Array<any>>([
@@ -21,40 +33,7 @@ const ChatsPanel = () => {
   const [input, setInput] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSend() {
-    if (!input?.trim()) return;
-
-    // Add user message to chat
-    const newUserMessage = { text: input, sender: "user" };
-    setMessage((prev) => [...prev, newUserMessage]);
-    setIsLoading(true);
-    setInput("");
-
-    try {
-      const res = await fetch("http://localhost:8000/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: input }),
-      });
-
-      const data = await res.json();
-
-      // Add bot response
-      const newBotMessage = { text: data.response, sender: "bot" };
-      setMessage((prev) => [...prev, newBotMessage]);
-    } catch (error) {
-      const errMsg = {
-        text: "Failed to get response. Please try again.",
-        sender: "bot",
-      };
-      setMessage((prev) => [...prev, errMsg]);
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  function handleSend() {}
 
   return (
     <Paper

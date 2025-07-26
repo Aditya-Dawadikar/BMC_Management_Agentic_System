@@ -4,7 +4,7 @@ import {Grid} from '@mui/material'
 
 import ChartsPanel from './components/charts/ChartsPanel'
 import ChatsPanel from './components/chats/ChatsPanel'
-import LogsPanel from './components/logs/LogsPanel'
+import LogsPanel from './components/realtimelogs/LogsPanel'
 
 function App() {
 
