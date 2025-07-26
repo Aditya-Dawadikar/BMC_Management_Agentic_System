@@ -12,27 +12,28 @@ from redfish_agent import get_agent_response
 import traceback
 from fastapi.responses import JSONResponse
 import certifi
+from mongo_crud.mongo_crud import insert_chat_log, get_summaries
+
 
 load_dotenv()
 # Configs
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "bmc_telemetry_db")
-MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "s3_telemetry_batches")
-MONGO_CHATLOGS_COLLECTION_NAME = os.getenv("MONGO_CHATLOGS_COLLECTION_NAME", "chat_logs")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+
 # Mongo Setup
 mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
 mongo_logs = mongo_db[MONGO_CHATLOGS_COLLECTION_NAME]
+
 # Gemini setup
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+
 # S3 setup
 s3_client = boto3.client(
     "s3",
@@ -50,6 +51,7 @@ app.add_middleware(
 )
 class ChatRequest(BaseModel):
     message: str
+
 def iso_to_unix(iso_str):
     dt = datetime.fromisoformat(iso_str)
     if dt.tzinfo is None:
@@ -57,6 +59,7 @@ def iso_to_unix(iso_str):
     else:
         dt = dt.astimezone(timezone.utc)
     return int(dt.timestamp())
+
 def extract_date_range(text: str):
     prompt = f"""
     You are a system assistant that extracts time ranges and identifies whether raw S3 telemetry logs are required.
@@ -87,12 +90,13 @@ def extract_date_range(text: str):
         return data.get("start_date"), data.get("end_date") or data.get("start_date"), data.get("s3_required", False)
     except json.JSONDecodeError:
         return None, None, False
+
 def fetch_s3_data(s3_path: str) -> str:
     try:
         response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_path)
         return response['Body'].read().decode('utf-8')
     except Exception as e:
-        print(f"❌ Error fetching from S3: {e}")
+        print(f"Error fetching from S3: {e}")
         return "Error fetching telemetry file from S3."
         return None, None
 
@@ -117,11 +121,10 @@ def chat(request: ChatRequest):
     start_unix = iso_to_unix(start_iso)
     end_unix = iso_to_unix(end_iso)
     print("Dates for Mongo:", start_unix, end_unix)
-    summaries = mongo_collection.find({
-        "end_time": {"$gte": str(start_unix)},
-        "start_time": {"$lte": str(end_unix)}
-    })
-    summary_list = list(summaries)
+    
+    # Fetch summaries from MongoDB
+    summary_list = get_summaries(start_unix, end_unix)
+
     if not summary_list:
         context = "No telemetry data found in that time range."
         s3_data = ""
@@ -132,7 +135,6 @@ def chat(request: ChatRequest):
         ])
         s3_data = ""
         if s3_needed:
-            
             for s in summary_list:
                 s3_path = s.get("s3_path")
                 if s3_path:
@@ -151,13 +153,12 @@ def chat(request: ChatRequest):
         chat = gemini_model.start_chat()
         response = chat.send_message(prompt)
         reply = response.text
-        mongo_logs.insert_one({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "user_message": user_message,
-            "ai_response": reply,
-            "date_range": {"start": start_iso, "end": end_iso},
-            "s3_used": s3_needed
-        })
+        insert_chat_log(
+            user_message=user_message,
+            ai_response=reply,
+            date_range={"start": start_iso, "end": end_iso},
+            s3_used=s3_needed
+        )
     except Exception as e:
         reply = f"Gemini error: {e}"
     return {"response": reply}
