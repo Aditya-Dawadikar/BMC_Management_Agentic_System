@@ -57,3 +57,5 @@ secret_commands.txt
 
 # Node dependencies
 node_modules/
+
+**/dump
