@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 import asyncio
 import json
 from mongo_crud.mongo_crud import insert_chat_log, get_summaries, get_recent_chat_messages
-
+from log_manager import push_log, sse_stream, stop_stream
 
 load_dotenv()
 # Configs
@@ -167,27 +167,6 @@ def chat(request: ChatRequest):
     return {"response": reply}
 
 
-def push_log(log):
-    global log_buffer
-    log_buffer.append(log)
-    if len(log_buffer) > MAX_BUFFER:
-        log_buffer.pop(0)
-
-async def sse_stream(request: Request):
-    last_index = 0  # Each client tracks its own read pointer
-    while not shutdown_flag:
-        if last_index < len(log_buffer):
-            # Send all new logs since last flush
-            new_logs = log_buffer[last_index:]
-            last_index = len(log_buffer)
-            yield f"data: {json.dumps(new_logs)}\n\n"
-        else:
-            # Heartbeat
-            yield ":\n\n"
-
-        await asyncio.sleep(FLUSH_INTERVAL_MS / 1000)
-        if await request.is_disconnected():
-            break
 
 @app.get("/logs")
 async def logs_stream(request: Request):
@@ -200,8 +179,7 @@ async def add_log(log: dict):
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global shutdown_flag
-    shutdown_flag = True
+    stop_stream()
 
 @app.get("/api/chat_messages/recent")
 def get_chat_messages():
