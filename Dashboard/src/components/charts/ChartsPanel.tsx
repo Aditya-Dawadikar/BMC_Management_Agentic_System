@@ -10,7 +10,7 @@ const ChartsPanel = () => {
     setDashboard(import.meta.env.VITE_GRAFANA_DASHBOARD)
   }, [])
 
-  console.log(import.meta.env.VITE_GRAFANA_DASHBOARD)
+  // console.log(import.meta.env.VITE_GRAFANA_DASHBOARD)
   return (
     <div>
       <Card variant='outlined'
