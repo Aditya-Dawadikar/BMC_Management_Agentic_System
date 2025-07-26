@@ -31,10 +31,11 @@ AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=us-east-2
 
 MONGO_DB_NAME=bmc_telemetry_db
+MONGO_COLLECTION_NAME=s3_telemetry_batches
+MONGO_CHATLOGS_COLLECTION_NAME=chat_logs
+MONGO_URI=<MONGO CONNECTION STRING>
 MONGO_S3_TELEMETRY_COLLECTION_NAME=s3_telemetry_batches
-MONGO_CHAT_LOGS_COLLECTION_NAME=chat_logs
 MONGO_ACTION_LOGS_COLLECTION_NAME=action_logs
-MONGO_URI=mongodb+srv://bmc_user:booming@bmc-cluster.b6cjgoh.mongodb.net/?retryWrites=true&w=majority&appName=bmc-cluster
 
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL_NAME=gemini-2.0-flash
