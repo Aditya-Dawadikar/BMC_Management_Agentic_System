@@ -7,3 +7,4 @@ google-generativeai
 dateparser
 langchain
 langchain-google-genai
+boto3
