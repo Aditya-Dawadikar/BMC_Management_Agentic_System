@@ -35,11 +35,11 @@ def generate_temperatures(chassis_id: str):
     temperatures = []
     for idx, name in enumerate(SENSOR_NAMES):
         temp = {
-            "CPU Temp": random.randint(35, 65),
-            "GPU Temp": random.randint(40, 75),
-            "Memory Temp": random.randint(30, 55),
-            "VRM Temp": random.randint(40, 70),
-            "Ambient Temp": random.randint(20, 35),
+            "CPU Temp": random.randint(30, 120),
+            "GPU Temp": random.randint(30, 120),
+            "Memory Temp": random.randint(30, 120),
+            "VRM Temp": random.randint(30, 120),
+            "Ambient Temp": random.randint(20, 100),
         }[name]
 
         thresholds = {

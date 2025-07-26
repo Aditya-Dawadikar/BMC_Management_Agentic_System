@@ -8,6 +8,9 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import boto3
 from fastapi.middleware.cors import CORSMiddleware
+from redfish_agent import get_agent_response
+import traceback
+
 load_dotenv()
 # Configs
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -89,6 +92,18 @@ def fetch_s3_data(s3_path: str) -> str:
     except Exception as e:
         print(f"❌ Error fetching from S3: {e}")
         return "Error fetching telemetry file from S3."
+        return None, None
+
+@app.post("/test")
+async def test(request: ChatRequest):
+    try:
+        user_message = request.message
+        reply = await get_agent_response(user_message)
+        return {"response": reply}
+    except Exception as e:
+        traceback.print_exc()
+        return {"error": str(e)}
+
 @app.post("/chat")
 def chat(request: ChatRequest):
     user_message = request.message
