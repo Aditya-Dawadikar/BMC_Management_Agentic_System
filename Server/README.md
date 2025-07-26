@@ -7,18 +7,24 @@ This FastAPI server provides a chat endpoint that uses Google Gemini and MongoDB
 - Accepts natural language questions about telemetry data (e.g., "What were the telemetry issues on 24 July 2025?")
 - Extracts date ranges using LLM and queries MongoDB for telemetry summaries
 - Integrates with Google Gemini for natural language responses
-- Logs the chat into MongoDB collection - chat_logs
+- Logs the chat into MongoDB collection - `chat_logs`
+- Logs the actions into MongoDB collection - `action_logs`
+- Supports S3 integration for fetching telemetry files
+- Automates Redfish API actions for telemetry management
 
 ## Requirements
 
 Install dependencies with:
 
+```bash
 pip install -r requirements.txt
+```
 
 ## Environment Variables
 
-Create a .env file with this variables
+Create a `.env` file with the following variables:
 
+```properties
 S3_BUCKET_NAME=axiado-bmc
 AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_ACCESS_KEY
@@ -27,11 +33,15 @@ AWS_DEFAULT_REGION=us-east-2
 MONGO_DB_NAME=bmc_telemetry_db
 MONGO_COLLECTION_NAME=s3_telemetry_batches
 MONGO_CHATLOGS_COLLECTION_NAME=chat_logs
-MONGO_URI=mongodb://localhost:27017/
+MONGO_URI=<MONGO CONNECTION STRING>
+MONGO_S3_TELEMETRY_COLLECTION_NAME=s3_telemetry_batches
+MONGO_ACTION_LOGS_COLLECTION_NAME=action_logs
 
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL_NAME=gemini-2.0-flash
 
+REDFISH_BASE_URL=http://localhost:8001/redfish/v1
+```
 
 ## Running the server
 
