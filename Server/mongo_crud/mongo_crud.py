@@ -31,7 +31,7 @@ def insert_chat_log(user_message: str, ai_response: str, date_range: dict, s3_us
         "s3_used": s3_used
     })
 
-def log_action(actor: str, endpoint: str, payload: dict, response: dict):
+def log_action(actor: str, endpoint: str, payload: dict, response: dict, timestamp: any, method: str, status: int):
     """
     Logs the action into MongoDB.
     actor: who performed the action (e.g., "agent", "user")
@@ -40,7 +40,9 @@ def log_action(actor: str, endpoint: str, payload: dict, response: dict):
     response: response from the Redfish API
     """
     mongo_action_logs.insert_one({
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "method": method,
+        "status": status,
+        "timestamp": timestamp,
         "actor": actor,
         "endpoint": endpoint,
         "payload": payload,
@@ -59,7 +61,7 @@ def get_summaries(start_unix: int, end_unix: int):
 def get_recent_chat_messages():
     try:
         logs = list(mongo_chat_logs.find().sort("timestamp", -1).limit(10))
-        print("Returning logs:", logs)  # Add this line
+        # print("Returning logs:", logs)  # Add this line
         for log in logs:
             log["_id"] = str(log["_id"])
         return JSONResponse(content={"messages": logs})

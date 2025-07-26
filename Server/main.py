@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pymongo import MongoClient
 import google.generativeai as genai
@@ -10,9 +10,11 @@ import boto3
 from fastapi.middleware.cors import CORSMiddleware
 from redfish_agent import get_agent_response
 import traceback
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+import asyncio
+import json
 from mongo_crud.mongo_crud import insert_chat_log, get_summaries, get_recent_chat_messages
-
+from log_manager import push_log, sse_stream, stop_stream
 
 load_dotenv()
 # Configs
@@ -34,6 +36,7 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_DEFAULT_REGION
 )
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class ChatRequest(BaseModel):
     message: str
 
@@ -92,6 +96,12 @@ def fetch_s3_data(s3_path: str) -> str:
         print(f"Error fetching from S3: {e}")
         return "Error fetching telemetry file from S3."
         return None, None
+
+
+log_buffer = []
+MAX_BUFFER = 1000
+FLUSH_INTERVAL_MS = 500
+shutdown_flag = False
 
 @app.post("/test")
 async def test(request: ChatRequest):
@@ -156,6 +166,20 @@ def chat(request: ChatRequest):
         reply = f"Gemini error: {e}"
     return {"response": reply}
 
+
+
+@app.get("/logs")
+async def logs_stream(request: Request):
+    return StreamingResponse(sse_stream(request), media_type="text/event-stream")
+
+@app.post("/log")
+async def add_log(log: dict):
+    push_log(log)
+    return {"status": "queued", "message": log}
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    stop_stream()
 
 @app.get("/api/chat_messages/recent")
 def get_chat_messages():
