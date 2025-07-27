@@ -11,7 +11,6 @@ Here is the telemetry summary for the relevant time range:
 Please analyze and answer clearly.
 
 Constraints:
-- Respond with text only, no markdown
 - No extra words, keep it concise
 - Do not respond to anything but the telemetry summary
 - If user query is irrelevant to the task, politely decline

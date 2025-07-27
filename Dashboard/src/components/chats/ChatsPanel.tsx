@@ -10,6 +10,8 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
+
 
 const ChatsPanel = () => {
   const [input, setInput] = useState<any>(null);
@@ -143,7 +145,8 @@ const ChatsPanel = () => {
                 maxWidth: "75%",
               }}
             >
-              <Typography variant="body2">{msg.text}</Typography>
+              {/* <Typography variant="body2">{msg.text}</Typography> */}
+              <ReactMarkdown>{msg.text}</ReactMarkdown>
             </Box>
           </Box>
         ))}
