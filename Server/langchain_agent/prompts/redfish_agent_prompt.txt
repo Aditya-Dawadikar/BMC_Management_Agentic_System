@@ -15,6 +15,7 @@ Return a JSON object strictly following this schema:
 
 1. Fan Action
 {{
+  "action_summary": <Summary of action performed>,
   "type": "fan",
   "data": {{
     "fans": {{
@@ -28,6 +29,7 @@ This action will set the fan speed to 40% and 60% for Fan1 and Fan2 respectively
 
 2. Voltage Action
 {{
+  "action_summary": <Summary of action performed>,
   "type": "voltage",
   "data": {{
     "Name": "12V Rail",
@@ -40,6 +42,7 @@ This action will set the Voltage limits to 12.5 Vold and 11.5 Volt upper and low
 
 3. Power Action
 {{
+  "action_summary": <Summary of action performed>,
   "type": "power",
   "data": {{
     "Limit": 250

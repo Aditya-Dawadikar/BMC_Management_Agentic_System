@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import certifi
 from fastapi.responses import JSONResponse
+from typing import Optional, Union
 
 load_dotenv()
 
@@ -19,17 +20,23 @@ mongo_db = mongo_client[MONGO_DB_NAME]
 mongo_chat_logs = mongo_db[MONGO_CHAT_LOGS_COLLECTION_NAME]
 mongo_action_logs = mongo_db[MONGO_ACTION_LOGS_COLLECTION_NAME]
 
-def insert_chat_log(user_message: str, ai_response: str, date_range: dict, s3_used: bool):
+def insert_chat_log(user_message: str,
+                    ai_response: str,
+                    date_range: Optional[dict] = None,
+                    s3_used: Optional[bool]=None,
+                    errors: Optional[str]=None):
     """
     Inserts a chat log into the MongoDB chat_logs collection.
     """
-    mongo_chat_logs.insert_one({
+    log_entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "user_message": user_message,
         "ai_response": ai_response,
         "date_range": date_range,
-        "s3_used": s3_used
-    })
+        "s3_used": s3_used,
+        "errors": errors,
+    }
+    mongo_chat_logs.insert_one(log_entry)
 
 def log_action(actor: str, endpoint: str, payload: dict, response: dict, timestamp: any, method: str, status: int):
     """

@@ -119,21 +119,27 @@ def set_power_limit(limit_watts: int, chassis_id: str):
 
 def redfish_factory(action: RedfishAction):
     if action.type == "fan":
-        return set_fan_speeds(action.data.fans, chassis_id=action.chassis_id)
+        res= set_fan_speeds(action.data.fans, chassis_id=action.chassis_id)
+        res["action_summary"] = action.action_summary
+        return res
 
     elif action.type == "voltage":
-        return set_voltage_thresholds(
+        res= set_voltage_thresholds(
             action.data.Name,
             action.data.Upper,
             action.data.Lower,
             chassis_id=action.chassis_id
         )
+        res["action_summary"] = action.action_summary
+        return res
 
     elif action.type == "power":
-        return set_power_limit(
+        res= set_power_limit(
             action.data.Limit,
             chassis_id=action.chassis_id
         )
+        res["action_summary"] = action.action_summary
+        return res
 
     else:
         raise ValueError(f"Unknown action type: {action.type}")
