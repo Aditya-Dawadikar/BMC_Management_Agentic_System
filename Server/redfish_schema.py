@@ -15,6 +15,7 @@ class PowerActionData(BaseModel):
 
 # Main Action schema
 class RedfishAction(BaseModel):
+    action_summary: str
     type: Literal["fan", "voltage", "power"]
     data: Union[FanActionData, VoltageActionData, PowerActionData]
     chassis_id: Optional[str] = Field("Chassis-1", description="Target chassis ID")
