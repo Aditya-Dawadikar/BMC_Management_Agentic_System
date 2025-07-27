@@ -1,6 +1,6 @@
 # Agentic AI for Autonomous Infrastructure Observability and Control
 
-## Meet The Team:
+## Meet The Team: BMC-IS-BOOMING
 
 ### **Aditya Dawadikar**
 [LinkedIn](https://linkedin.com/in/aditya-dawadikar) | [Website](https://portfolio-aditya-dawadikar.vercel.app/) | [GitHub](https://github.com/aditya-dawadikar) | [Medium](https://medium.com/@aditya-dawadikar)
@@ -39,6 +39,12 @@ We are building an *agentic, AI-powered platform* that couples deep observabilit
 
 ## Application View
 
+#### DEMO Video
+
+[Watch on YouTube](https://www.youtube.com/watch?v=YqEp3CP8ePM)
+
+
+#### App Screenshot
 ![img](./AppView.png)
 
 
