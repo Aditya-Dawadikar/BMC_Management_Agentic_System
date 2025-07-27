@@ -36,7 +36,6 @@ async def get_agent_response(query: str):
     response = chain.run(resources=json.dumps(resources), query=query)
 
     response = clean_llm_json(response)
-    # print(response)
 
     # pass the action to the redfish_factory()
     try:

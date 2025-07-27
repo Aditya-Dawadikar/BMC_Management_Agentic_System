@@ -66,16 +66,30 @@ async def chat(request: ChatRequest):
         print("router response: ", query_metadata)
 
         if query_metadata.get("query_type") == "UNKNOWN":
-            # raise HTTPException(status_code=400, detail=f"""Agent Response: {query_metadata.get("response")}""")
+            insert_chat_log(
+                    user_message=user_message,
+                    ai_response=query_metadata.get("response")
+                )
             return {"response": query_metadata.get("response")}
         elif query_metadata.get("query_type") == "ACTION":
             reply = await get_agent_response(user_message)
-            return {"response": str(reply)}
+
+            insert_chat_log(
+                    user_message=user_message,
+                    ai_response=reply.get("action_summary")
+                )
+
+            return {"response": reply.get("action_summary")}
         elif query_metadata.get("query_type") == "INFERENCE":
             # Step 1: Extract window and s3 flag
             start_iso, end_iso, s3_needed = await extract_date_range(user_message)
             if not start_iso:
-                return {"response": "Sorry, I couldn't understand the date range in your question."}
+                reply = "Sorry, I couldn't understand the date range in your question."
+                insert_chat_log(
+                    user_message=user_message,
+                    ai_response=reply
+                )
+                return {"response": reply}
             
             start_unix = iso_to_unix(start_iso)
             end_unix = iso_to_unix(end_iso)
@@ -101,6 +115,8 @@ async def chat(request: ChatRequest):
                             # print(s3_data)
                 
             reply = await get_chatbot_response(user_message, context, s3_data)
+
+            print("AI: ", reply)
 
             insert_chat_log(
                     user_message=user_message,
