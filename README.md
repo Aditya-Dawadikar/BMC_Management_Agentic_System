@@ -9,6 +9,22 @@
 
 ---
 
+## Meet The Team:
+
+### **Aditya Dawadikar**
+[LinkedIn](https://linkedin.com/in/aditya-dawadikar) | [Website](https://portfolio-aditya-dawadikar.vercel.app/) | [GitHub](https://github.com/aditya-dawadikar) | [Medium](https://medium.com/@aditya-dawadikar)
+
+### **Udayan Atreya**
+[LinkedIn](https://www.linkedin.com/in/uatreya/) | [Website](https://udayan-atreya.netlify.app/) | [GitHub](https://github.com/slowloris-98)
+
+### **Sohan Vallapureddy**
+[LinkedIn](https://www.linkedin.com/in/vallapureddy-sohan/) | [Website](https://sohanv.com/) | [GitHub](https://github.com/sohan2000)
+
+### **Harshavardhan Valmiki**
+[LinkedIn](https://www.linkedin.com/in/harshavalmiki/) | [GitHub](https://github.com/Harshavalmiki)
+
+---
+
 ## Application View
 
 ![img](./AppView.png)
@@ -123,21 +139,5 @@ The architecture integrates multiple components for **hardware telemetry, real-t
 6. **Adaptive Control & Autonomous Agents**
 
    * While the current setup performs **batch archival**, we will extend it with an **LLM-based agent** that monitors logs, detects anomalies, and **autonomously triggers corrective actions** or **sends alerts**.
-
----
-
-## Meet The Team:
-
-### **Aditya Dawadikar**
-[LinkedIn](https://linkedin.com/in/aditya-dawadikar) | [Website](https://portfolio-aditya-dawadikar.vercel.app/) | [GitHub](https://github.com/aditya-dawadikar) | [Medium](https://medium.com/@aditya-dawadikar)
-
-### **Udayan Atreya**
-[LinkedIn](https://www.linkedin.com/in/uatreya/) | [Website](https://udayan-atreya.netlify.app/) | [GitHub](https://github.com/slowloris-98)
-
-### **Sohan Vallapureddy**
-[LinkedIn](https://www.linkedin.com/in/vallapureddy-sohan/) | [Website](https://sohanv.com/) | [GitHub](https://github.com/sohan2000)
-
-### **Harshavardhan Valmiki**
-[LinkedIn](https://www.linkedin.com/in/harshavalmiki/) | [GitHub](https://github.com/Harshavalmiki)
 
 ---
