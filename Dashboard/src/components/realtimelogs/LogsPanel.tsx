@@ -106,8 +106,30 @@ const LogsPanel = () => {
   }, [logs, actorFilter, endpointFilter, startTime, endTime]);
 
 
+  async function fetchActionLogs() {
+    const query:any = {};
+    if (actorFilter) query.actor = actorFilter;
+    if (endpointFilter) query.endpoint = endpointFilter;
+    query.timestamp = {
+      ...(startTime && { "$gte": startTime }),
+      ...(endTime && { "$lte": endTime })
+    };
+
+    const url = `http://localhost:8002/api/action_logs?query=${encodeURIComponent(JSON.stringify(query))}&limit=100`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      // Extract the array from the response object
+      setFilteredLogs(Array.isArray(data.action_logs) ? data.action_logs : []);
+    } catch (err) {
+      console.error("Failed to fetch action logs:", err);
+      setFilteredLogs([]);
+    }
+  }
+
   function runQuery() {
     setIsQuery(true);
+    fetchActionLogs();
   }
 
   function clearQuery() {
@@ -222,6 +244,8 @@ const LogsPanel = () => {
             </Button>
           )}
         </Stack>
+        
+        {isQuery?<>pulling from Mongo</>: <>Pulling from SSE</>}
 
         <List style={{ height: "50vh", overflowY: "auto" }} ref={listRef}>
           {filteredLogs.map((log, index) => (
@@ -260,8 +284,12 @@ const LogsPanel = () => {
                     <Typography variant="body2">
                       [{new Date(log.timestamp.replace(/(\.\d{3})\d+/, "$1")).toLocaleString()}]
                     </Typography>
-                    <Chip label={log.actor.toUpperCase()} color="primary" size="small" />
-                    <Chip label={`${log.method.toUpperCase()}:${log.status}`} color={log.status === 200 ? "success" : "error"} size="small" />
+                    <Chip label={(log.actor ? log.actor.toUpperCase() : "UNKNOWN")} color="primary" size="small" />
+                    <Chip
+                      label={`${log.method ? log.method.toUpperCase() : "METHOD"}:${log.status ?? "?"}`}
+                      color={log.status === 200 ? "success" : "error"}
+                      size="small"
+                    />
                     <Typography variant="body2" component="span">
                       {log.endpoint}
                     </Typography>
