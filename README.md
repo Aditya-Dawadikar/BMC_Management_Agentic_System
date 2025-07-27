@@ -1,14 +1,5 @@
 # Agentic AI for Autonomous Infrastructure Observability and Control
 
-
-### Quick Resources:
-
-[OUTLINE.md](./OUTLINE.md)
-
-[UPDATE.md](./UPDATE.md)
-
----
-
 ## Meet The Team:
 
 ### **Aditya Dawadikar**
@@ -22,6 +13,27 @@
 
 ### **Harshavardhan Valmiki**
 [LinkedIn](https://www.linkedin.com/in/harshavalmiki/) | [GitHub](https://github.com/Harshavalmiki)
+
+---
+## Focus Area
+*Agentic AI for Autonomous Infrastructure Observability and Control*
+- Intelligent monitoring, analysis, and autonomous remediation for data center hardware (with LLM-powered agents).
+
+## Description of the Problem
+
+As data centers scale, traditional infrastructure management tools are increasingly inadequate. While legacy platforms provide monitoring and visualization, they are overwhelmingly reactive, fragmented, and require high manual intervention for fault detection and system recovery. This results in delays, human error, and missed opportunities for optimization.
+
+*Current challenges:*
+- Lack of real-time insight and predictive detection for hardware faults.
+- Limited (if any) use of intelligent, autonomous agents for controlling hardware or remediating issues.
+- Visualization and observability are treated as endpoints, not as enablers for action.
+
+## What We’re Building
+
+We are building an *agentic, AI-powered platform* that couples deep observability with autonomous, intelligent control:
+- Hardware telemetry is continuously ingested and analyzed.
+- Instead of just dashboards, an LLM-powered agent interprets, reasons, and acts—triggering controls, remediations, or optimizations with minimal human intervention.
+- Observability is harnessed as a substrate for proactive, autonomous action—not just monitoring.
 
 ---
 
@@ -141,3 +153,9 @@ The architecture integrates multiple components for **hardware telemetry, real-t
    * While the current setup performs **batch archival**, we will extend it with an **LLM-based agent** that monitors logs, detects anomalies, and **autonomously triggers corrective actions** or **sends alerts**.
 
 ---
+### Quick Resources:
+
+[OUTLINE.md](./OUTLINE.md)
+
+[UPDATE.md](./UPDATE.md)
+
