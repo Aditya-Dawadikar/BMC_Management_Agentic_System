@@ -2,10 +2,9 @@ from redfish_controller import (get_all_chassis_data,
                                 redfish_factory)
 from redfish_schema import RedfishAction
 from langchain_agent.chains.redfish_action_chain import load_redfish_action_chain
+from langchain_agent.chains.chatbot_chain import load_chatbot_chain
 import json
-
 import re
-import json
 
 def clean_llm_json(output: str) -> str:
     """
