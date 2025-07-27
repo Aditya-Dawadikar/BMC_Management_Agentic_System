@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Box, Paper, Divider, Typography, LinearProgress, TextField, IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import axios from "axios";
@@ -7,6 +7,7 @@ const ChatsPanel = () => {
   const [messages, setMessages] = useState<Array<any>>([]);
   const [input, setInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -41,6 +42,13 @@ const ChatsPanel = () => {
     };
     fetchMessages();
   }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   function handleSend() {}
 
@@ -92,6 +100,7 @@ const ChatsPanel = () => {
             </Box>
           </Box>
         ))}
+        <div ref={chatEndRef} />
       </Box>
       <Divider />
       {isLoading ? <LinearProgress sx={{ margin: 1, height: 10 }} /> : null}
