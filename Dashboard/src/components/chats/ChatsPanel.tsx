@@ -1,11 +1,3 @@
-//import React from "react";
-//import { Card, Box, Paper, Divider } from "@mui/material";
-//import { Typography } from "@mui/material";
-//import { useState } from "react";
-//import { LinearProgress } from "@mui/material";
-//import { TextField } from "@mui/material";
-//import { IconButton } from "@mui/material";
-//import SendIcon from "@mui/icons-material/Send";
 import React, { useEffect, useState } from "react";
 import {
   Box,
