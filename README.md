@@ -28,9 +28,9 @@ As data centers scale, traditional infrastructure management tools are increasin
 - Limited (if any) use of intelligent, autonomous agents for controlling hardware or remediating issues.
 - Visualization and observability are treated as endpoints, not as enablers for action.
 
-## What We’re Building
+## What We Built
 
-We are building an *agentic, AI-powered platform* that couples deep observability with autonomous, intelligent control:
+We built an *agentic, AI-powered platform* that couples deep observability with autonomous, intelligent control:
 - Hardware telemetry is continuously ingested and analyzed.
 - Instead of just dashboards, an LLM-powered agent interprets, reasons, and acts—triggering controls, remediations, or optimizations with minimal human intervention.
 - Observability is harnessed as a substrate for proactive, autonomous action—not just monitoring.
