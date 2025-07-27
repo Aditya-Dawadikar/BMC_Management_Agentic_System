@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import {Grid} from '@mui/material'
+import { Grid, AppBar, Toolbar, Typography } from '@mui/material';
 
 import ChartsPanel from './components/charts/ChartsPanel'
 import ChatsPanel from './components/chats/ChatsPanel'
@@ -10,6 +10,13 @@ function App() {
 
   return (
     <>
+      <AppBar position="static" sx={{ backgroundColor: 'var(--color-primary-accent)' }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: '#000' }}>
+            Axiado Observability Platform
+          </Typography>
+        </Toolbar>
+      </AppBar>
       <Grid container spacing={2}
         sx={{
           margin: "1em"
