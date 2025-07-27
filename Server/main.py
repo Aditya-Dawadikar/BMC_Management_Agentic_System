@@ -106,14 +106,19 @@ async def chat(request: ChatRequest):
                     for s in summary_list
                 ])
                 s3_data = ""
-                if s3_needed:
-                    for s in summary_list:
-                        s3_path = s.get("s3_path")
-                        if s3_path:
-                            file_data = fetch_s3_data(s3_path)
-                            s3_data += f"\n\nS3 Telemetry File ({s3_path}):\n{file_data[:1000]}"
-                            # print(s3_data)
-                
+                # if s3_needed:
+                #     for s in summary_list:
+                #         s3_path = s.get("s3_path")
+                #         if s3_path:
+                #             file_data = fetch_s3_data(s3_path)
+                #             s3_data += f"\n\nS3 Telemetry File ({s3_path}):\n{file_data}"
+
+                for s in summary_list:
+                    s3_path = s.get("s3_path")
+                    if s3_path:
+                        file_data = fetch_s3_data(s3_path)
+                        s3_data += f"\n\nS3 Telemetry File ({s3_path}):\n{file_data}"
+
             reply = await get_chatbot_response(user_message, context, s3_data)
 
             print("AI: ", reply)
@@ -179,7 +184,7 @@ def iso_to_unix(iso_str):
 async def extract_date_range(text: str):
     try:
         response = await get_preprocessor_response(text, datetime.now(timezone.utc).date().isoformat())
-
+        print("Preprocessor response:", response)
         content = response.strip().strip("```json").strip("```")
     
         data = json.loads(content)
