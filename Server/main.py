@@ -90,12 +90,16 @@ async def chat(request: ChatRequest):
                     ai_response=reply
                 )
                 return {"response": reply}
-            
+
             start_unix = iso_to_unix(start_iso)
             end_unix = iso_to_unix(end_iso)
+
+            print(start_unix, end_unix, type(start_unix), type(end_unix))
             
             # Fetch summaries from MongoDB
             summary_list = get_summaries(start_unix, end_unix)
+
+            print(summary_list)
 
             if not summary_list:
                 context = "No telemetry data found in that time range."
@@ -105,6 +109,9 @@ async def chat(request: ChatRequest):
                     f"[{s['start_time']} - {s['end_time']}] Threats: {s['threat_count']}, Unhealthy: {s['unhealthy_count']}, Reasons: {json.dumps(s['reasons'])}"
                     for s in summary_list
                 ])
+
+                print(context)
+
                 s3_data = ""
                 # if s3_needed:
                 #     for s in summary_list:
@@ -118,6 +125,8 @@ async def chat(request: ChatRequest):
                     if s3_path:
                         file_data = fetch_s3_data(s3_path)
                         s3_data += f"\n\nS3 Telemetry File ({s3_path}):\n{file_data}"
+
+            print(s3_data)
 
             reply = await get_chatbot_response(user_message, context, s3_data)
 

@@ -61,8 +61,8 @@ def get_summaries(start_unix: int, end_unix: int):
     Fetch summaries from MongoDB based on the given time range.
     """
     return list(mongo_db[MONGO_S3_TELEMETRY_COLLECTION_NAME].find({
-        "end_time": {"$gte": str(start_unix)},
-        "start_time": {"$lte": str(end_unix)}
+        "end_time": {"$lte": str(end_unix)},
+        "start_time": {"$gte": str(start_unix)}
     }))
 
 def get_recent_chat_messages():
