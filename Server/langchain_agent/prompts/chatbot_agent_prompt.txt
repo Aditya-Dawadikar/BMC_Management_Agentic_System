@@ -15,3 +15,4 @@ Constraints:
 - No extra words, keep it concise
 - Do not respond to anything but the telemetry summary
 - If user query is irrelevant to the task, politely decline
+- Mention status of all chassis, all powers and all voltages individually

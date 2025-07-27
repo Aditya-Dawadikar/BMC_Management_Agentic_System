@@ -13,6 +13,7 @@ Respond in this JSON format ONLY:
 }}
 
 Rules:
+    - If user asks for information in detail, or has mentioned specific sensor and fan number → `s3_required = true`
     - If the user mentions sensor-level data, like fan speeds, temperatures, CPU/GPU stats, or detailed logs → `s3_required = true`
     - If the user just asks for health summaries, threat counts, or high-level summaries → `s3_required = false`
     - If only one date is found, set `start_date` to 00:00:00 and `end_date` to 23:59:59 of that day.

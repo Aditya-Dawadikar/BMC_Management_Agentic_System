@@ -93,7 +93,6 @@ def get_action_logs(query: dict = None, limit: int = 20):
             query = {}  # Default to an empty query to fetch all records
 
         logs = list(mongo_action_logs.find(query).sort("timestamp", -1).limit(limit))
-        print("Returning action logs:", logs)  # Debugging log
         for log in logs:
             log["_id"] = str(log["_id"])  # Convert ObjectId to string for JSON serialization
         return JSONResponse(content={"action_logs": logs})
