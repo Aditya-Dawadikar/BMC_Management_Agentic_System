@@ -100,3 +100,14 @@ def get_action_logs(query: dict = None, limit: int = 20):
     except Exception as e:
         print("Error fetching action logs:", e)  # Debugging log
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+def authenticate_user(user_id: str, password: str):
+    """
+    Checks if a user with the given user_id and password exists.
+    Returns the user document if found, else None.
+    """
+    global mongo_db
+    if mongo_db is None:
+        from . import get_mongo_db  # or however you get your db instance
+        mongo_db = get_mongo_db()
+    return mongo_db["users-accounts"].find_one({"user_id": user_id, "password": password})
