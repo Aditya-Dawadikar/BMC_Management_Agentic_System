@@ -35,7 +35,23 @@ const LogsPanel = () => {
   const [actors, setActors] = useState<string[]>([]);
   const [endpoints, setEndpoints] = useState<string[]>([]);
 
-  const [isQuery, setIsQuery] = useState<boolean>(false);
+  const [isQuery, setIsQuery] = useState<boolean>(true);
+
+  const POOL_INTERVAL = 5;
+
+  // useEffect(()=>{
+  //   fetchActionLogs()
+  // },[])
+
+  useEffect(() => {
+    if (!isQuery) return;
+
+    const interval = setInterval(() => {
+      fetchActionLogs();
+    }, POOL_INTERVAL*1000); // 2 seconds
+
+    return () => clearInterval(interval);
+  }, [isQuery, actorFilter, endpointFilter, startTime, endTime]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -47,32 +63,32 @@ const LogsPanel = () => {
   }, [filteredLogs]); // triggers every time filteredLogs changes
 
 
-  useEffect(() => {
-    const eventSource = new EventSource('http://localhost:8002/logs');
+  // useEffect(() => {
+  //   const eventSource = new EventSource('http://localhost:8002/logs');
 
-    eventSource.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        const newLogs = Array.isArray(parsed) ? parsed : [parsed];
+  //   eventSource.onmessage = (event) => {
+  //     try {
+  //       const parsed = JSON.parse(event.data);
+  //       const newLogs = Array.isArray(parsed) ? parsed : [parsed];
 
-        console.log(newLogs)
+  //       console.log(newLogs)
 
-        setLogs((prevLogs) => [
-          ...newLogs.map((l) => ({ ...l, isNew: true })),
-          ...prevLogs
-        ]);
-      } catch (err) {
-        console.error('Failed to parse log:', err, event.data);
-      }
-    };
+  //       setLogs((prevLogs) => [
+  //         ...newLogs.map((l) => ({ ...l, isNew: true })),
+  //         ...prevLogs
+  //       ]);
+  //     } catch (err) {
+  //       console.error('Failed to parse log:', err, event.data);
+  //     }
+  //   };
 
-    eventSource.onerror = (err) => {
-      console.error('SSE connection error:', err);
-      eventSource.close();
-    };
+  //   eventSource.onerror = (err) => {
+  //     console.error('SSE connection error:', err);
+  //     eventSource.close();
+  //   };
 
-    return () => eventSource.close();
-  }, []);
+  //   return () => eventSource.close();
+  // }, []);
 
 
   useEffect(() => {
@@ -107,10 +123,10 @@ const LogsPanel = () => {
 
 
   async function fetchActionLogs() {
-    const query:any = {};
+    const query: any = {};
     if (actorFilter) query.actor = actorFilter;
     if (endpointFilter) query.endpoint = endpointFilter;
-    query.timestamp = {
+    if (startTime && endTime) query.timestamp = {
       ...(startTime && { "$gte": startTime }),
       ...(endTime && { "$lte": endTime })
     };
@@ -234,25 +250,36 @@ const LogsPanel = () => {
             Run Query
           </Button>
 
-          {isQuery && (
-            <Button
-              variant="outlined"
-              sx={{ borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}
-              onClick={clearQuery}
-            >
-              Clear Query
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            sx={{ borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}
+            onClick={clearQuery}
+          >
+            Clear Query
+          </Button>
+
+          {
+            isQuery ? <>
+              <Button
+                variant="outlined"
+                sx={{
+                  borderColor: 'var(--color-primary-accent)',
+                  color: 'var(--color-primary-accent)',
+                }}
+                onClick={fetchActionLogs}
+              >
+                Refresh
+              </Button>
+            </> : <></>
+          }
         </Stack>
-        
-        {isQuery?<>pulling from Mongo</>: <>Pulling from SSE</>}
 
         <List style={{ height: "50vh", overflowY: "auto" }} ref={listRef}>
           {filteredLogs.map((log, index) => (
             <ListItem
               // className="log-item"
               className={`log-item ${log.isNew ? 'new-log' : ''}`}
-              key={index}
+              key={`${log.timestamp}-${index}`}
               sx={{
                 display: 'block',
                 borderBottom: '1px solid var(--color-divider)',
