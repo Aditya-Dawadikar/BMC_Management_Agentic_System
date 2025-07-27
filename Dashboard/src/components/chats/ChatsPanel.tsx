@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Paper,
@@ -12,28 +12,57 @@ import SendIcon from "@mui/icons-material/Send";
 import axios from "axios";
 
 const ChatsPanel = () => {
-  const [messages, setMessage] = useState<Array<any>>([
-    {
-      text: "Hello! how can I help you today?",
-      sender: "bot",
-    },
-    {
-      text: "Help me analyse the device status",
-      sender: "user",
-    },
-  ]);
   const [input, setInput] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessage] = useState<Array<any>>([]);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const fetchMessages = async () => {
+      setIsLoading(true);
+      try {
+        const res = await axios.get("/api/chat_messages/recent");
+        console.log("API response:", res.data);
+        const logs = Array.isArray(res.data)
+          ? res.data
+          : res.data.messages || [];
+        // Flatten each log into user and bot messages
+        const chatMessages = logs.flatMap((log: any) => [
+          {
+            text: log.user_message,
+            sender: "user",
+            timestamp: log.timestamp,
+            _id: log._id + "_user",
+          },
+          {
+            text: log.ai_response,
+            sender: "bot",
+            timestamp: log.timestamp,
+            _id: log._id + "_bot",
+          },
+        ]);
+        // Sort by timestamp
+        chatMessages.sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        setMessage(chatMessages);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+      setIsLoading(false);
+    };
+    fetchMessages();
+  }, []);
+
   async function handleSend() {
     if (!input?.trim()) return;
-    // Add user message to chat
     const newUserMessage = { text: input, sender: "user" };
     setMessage((prev) => [...prev, newUserMessage]);
     setIsLoading(true);
     setInput("");
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,7 +85,17 @@ const ChatsPanel = () => {
     } finally {
       setIsLoading(false);
     }
+    // fetchMessages();
   }
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  //   function handleSend() {}
 
   return (
     <Paper
@@ -108,6 +147,7 @@ const ChatsPanel = () => {
             </Box>
           </Box>
         ))}
+        <div ref={chatEndRef} />
       </Box>
       <Divider />
       {isLoading ? <LinearProgress sx={{ margin: 1, height: 10 }} /> : <></>}
