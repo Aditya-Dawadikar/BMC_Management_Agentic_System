@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from mongo_crud.mongo_crud import get_action_logs, insert_chat_log, get_summaries, get_recent_chat_messages
+from mongo_crud.mongo_crud import get_action_logs, insert_chat_log, get_summaries, get_recent_chat_messages, authenticate_user
 from log_manager import sse_stream, stop_stream
 
 from redfish_agent import get_agent_response
@@ -220,3 +220,14 @@ def fetch_s3_data(s3_path: str) -> str:
 #     except Exception as e:
 #         traceback.print_exc()
 #         return {"error": str(e)}
+
+@app.post("/api/login")
+async def login(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    password = data.get("password")
+    user = authenticate_user(user_id, password)
+    if user:
+        return JSONResponse({"success": True, "user_id": user_id})
+    else:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
